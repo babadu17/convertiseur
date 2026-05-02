@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculateur de monnaie</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #f4f2ee;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 2rem 1rem;
+      color: #1a1a1a;
+    }
+
+    .container {
+      background: #fff;
+      border-radius: 16px;
+      padding: 2rem;
+      width: 100%;
+      max-width: 680px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: #888;
+      margin-bottom: 1.75rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-bottom: 1.75rem;
+    }
+
+    @media (max-width: 500px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    .section-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #aaa;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 10px;
+    }
+
+    .rows { display: flex; flex-direction: column; gap: 7px; }
+
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #f9f8f6;
+      border-radius: 10px;
+      padding: 6px 10px;
+    }
+
+    .row .label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1a1a1a;
+      min-width: 50px;
+    }
+
+    .row .count {
+      min-width: 26px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+
+    .row input[type=number] {
+      width: 52px;
+      margin-left: auto;
+      padding: 4px 6px;
+      font-size: 13px;
+      text-align: center;
+      border: 1px solid #ddd;
+      border-radius: 7px;
+      background: #fff;
+      color: #1a1a1a;
+      outline: none;
+    }
+
+    .row input[type=number]:focus {
+      border-color: #aaa;
+    }
+
+    button.ctrl {
+      width: 28px;
+      height: 28px;
+      border: 1px solid #ddd;
+      border-radius: 7px;
+      background: #fff;
+      font-size: 17px;
+      line-height: 1;
+      cursor: pointer;
+      color: #333;
+      flex-shrink: 0;
+      transition: background 0.1s;
+    }
+
+    button.ctrl:hover { background: #f0ede8; }
+    button.ctrl:active { transform: scale(0.95); }
+
+    .total-bar {
+      border-top: 1px solid #eee;
+      padding-top: 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .total-label {
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 4px;
+    }
+
+    #total {
+      font-size: 36px;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+
+    button.reset {
+      font-size: 13px;
+      padding: 8px 18px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background: #fff;
+      cursor: pointer;
+      color: #555;
+      transition: background 0.1s;
+    }
+
+    button.reset:hover { background: #f4f2ee; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Calculateur de monnaie</h1>
+  <p class="subtitle">Entrez vos billets et pièces pour obtenir le total.</p>
+
+  <div class="grid">
+    <div>
+      <p class="section-label">Billets</p>
+      <div class="rows" id="billets"></div>
+    </div>
+    <div>
+      <p class="section-label">Pièces</p>
+      <div class="rows" id="pieces"></div>
+    </div>
+  </div>
+
+  <div class="total-bar">
+    <div>
+      <p class="total-label">Total</p>
+      <p id="total">0,00 €</p>
+    </div>
+    <button class="reset" onclick="reset()">Tout remettre à zéro</button>
+  </div>
+</div>
+
+<script>
+  const billetsData = [500, 200, 100, 50, 20, 10, 5];
+  const piecesData  = [2, 1, 0.50, 0.20, 0.10, 0.05, 0.02, 0.01];
+  const counts = {};
+
+  function fmtLabel(v) {
+    return v % 1 === 0 ? v + ' €' : v.toFixed(2).replace('.', ',') + ' €';
+  }
+
+  function calcTotal() {
+    let total = 0;
+    billetsData.forEach(v => total += (counts['k' + v] || 0) * v);
+    piecesData.forEach(v  => total += (counts['k' + v] || 0) * v);
+    document.getElementById('total').textContent = total.toFixed(2).replace('.', ',') + ' €';
+  }
+
+  function makeRow(container, value) {
+    const key = 'k' + value;
+    counts[key] = 0;
+
+    const row = document.createElement('div');
+    row.className = 'row';
+
+    const lbl = document.createElement('span');
+    lbl.className = 'label';
+    lbl.textContent = fmtLabel(value);
+
+    const minus = document.createElement('button');
+    minus.className = 'ctrl';
+    minus.textContent = '−';
+
+    const display = document.createElement('span');
+    display.className = 'count';
+    display.textContent = '0';
+
+    const plus = document.createElement('button');
+    plus.className = 'ctrl';
+    plus.textContent = '+';
+
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.min = 0;
+    input.value = 0;
+
+    minus.onclick = () => {
+      if (counts[key] > 0) {
+        counts[key]--;
+        display.textContent = counts[key];
+        input.value = counts[key];
+        calcTotal();
+      }
+    };
+
+    plus.onclick = () => {
+      counts[key]++;
+      display.textContent = counts[key];
+      input.value = counts[key];
+      calcTotal();
+    };
+
+    input.oninput = () => {
+      const v = Math.max(0, parseInt(input.value) || 0);
+      input.value = v;
+      counts[key] = v;
+      display.textContent = v;
+      calcTotal();
+    };
+
+    row.appendChild(lbl);
+    row.appendChild(minus);
+    row.appendChild(display);
+    row.appendChild(plus);
+    row.appendChild(input);
+    container.appendChild(row);
+  }
+
+  function reset() {
+    Object.keys(counts).forEach(k => counts[k] = 0);
+    document.querySelectorAll('.count').forEach(s => s.textContent = '0');
+    document.querySelectorAll('input[type=number]').forEach(i => i.value = 0);
+    calcTotal();
+  }
+
+  const billetsEl = document.getElementById('billets');
+  const piecesEl  = document.getElementById('pieces');
+  billetsData.forEach(v => makeRow(billetsEl, v));
+  piecesData.forEach(v  => makeRow(piecesEl,  v));
+</script>
+
+</body>
+</html>
